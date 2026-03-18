@@ -263,4 +263,78 @@ export default function MedTracker() {
                     <div className="bg-blue-600 p-3 rounded-xl text-white shadow-lg"><Pill size={18}/></div>
                     <div>
                       <h2 className="font-bold text-slate-800 dark:text-white leading-none">{med.name}</h2>
-                      <span
+                      <span className="text-[10px] text-slate-300 dark:text-slate-500 font-bold">{med.dosage} • {med.time} HS</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => {setEditingMedId(med.id); setNewName(med.name); setNewDosage(med.dosage); setNewTime(med.time); setIsModalOpen(true);}} className="p-2 text-slate-200 dark:text-slate-700 hover:text-blue-500 transition-colors"><Pencil size={18}/></button>
+                    <button onClick={() => {if(window.confirm("¿Eliminar?")) setMeds(meds.filter(m => m.id !== med.id))}} className="p-2 text-slate-200 dark:text-slate-700 hover:text-red-500 transition-colors"><Trash2 size={18}/></button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {weekDays.map(date => {
+                    const dStr = formatDate(date);
+                    const status = med.history[dStr];
+                    const isToday = formatDate(new Date()) === dStr;
+                    return (
+                      <button key={dStr} onClick={() => {handleToggle(med.id, dStr); setSelectedDate(dStr);}} className={`aspect-square rounded-xl flex flex-col items-center justify-center border-2 transition-all ${status === true ? 'bg-blue-600 border-blue-600 text-white shadow-md' : status === false ? 'bg-red-50 border-red-100 dark:bg-red-900/20 text-red-500' : 'bg-slate-50 dark:bg-slate-800 border-slate-50 dark:border-slate-800 text-slate-200'}`}>
+                        <span className={`text-[8px] font-bold ${isToday && status === undefined ? 'text-blue-500' : ''}`}>{date.toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase()}</span>
+                        <span className="text-[11px] font-black">{date.getDate()}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* --- BOTONES FLOTANTES --- */}
+        <div className="fixed bottom-8 right-8 flex flex-col gap-4 items-end z-[110]">
+          {isEmergenciasOpen && (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-red-100 dark:border-red-900/30 p-4 w-64 animate-in slide-in-from-bottom-4">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <span className="text-xs font-black text-red-600 dark:text-red-400 uppercase tracking-widest text-xs">Emergencias</span>
+                <button onClick={() => setIsEmergenciasOpen(false)}><X size={16} className="text-slate-300 dark:text-slate-600"/></button>
+              </div>
+              <div className="space-y-2">
+                {[{ n: 'Ambulancia 107', tel: '107', c: 'text-red-600', i: HeartPulse }, { n: 'Policía 911', tel: '911', c: 'text-blue-600', i: ShieldAlert }, { n: 'OSEP Mendoza', tel: '0810-810-1033', c: 'text-red-500', i: Activity }].map((item, idx) => (
+                  <a key={idx} href={`tel:${item.tel.replace(/-/g, '')}`} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl hover:bg-red-50 transition-colors">
+                    <div className="flex items-center gap-3"><item.i size={16} className={item.c} /><span className="text-[11px] font-bold dark:text-slate-300">{item.n}</span></div>
+                    <Phone size={10} className="text-red-500" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button onClick={() => setIsEmergenciasOpen(!isEmergenciasOpen)} className={`p-4 rounded-full shadow-xl transition-all ${isEmergenciasOpen ? 'bg-red-600 text-white' : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'}`}>
+            {isEmergenciasOpen ? <X size={24}/> : <ShieldAlert size={24}/>}
+          </button>
+
+          <button onClick={() => {setEditingMedId(null); setNewName(''); setIsModalOpen(true);}} className="bg-blue-600 text-white p-5 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all">
+            <Plus size={28}/>
+          </button>
+        </div>
+
+        {/* MODAL AGREGAR */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[130] p-0 sm:p-4">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-10 shadow-2xl relative">
+              <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 text-slate-300 dark:text-slate-600"><X /></button>
+              <h2 className="text-2xl font-black mb-6 dark:text-white">{editingMedId ? 'Editar' : 'Nuevo'}</h2>
+              <form onSubmit={saveMedication} className="space-y-4">
+                <input autoFocus type="text" placeholder="Nombre" value={newName} onChange={e => setNewName(e.target.value)} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-500" />
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" placeholder="Dosis" value={newDosage} onChange={e => setNewDosage(e.target.value)} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold outline-none" />
+                  <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold outline-none" />
+                </div>
+                <button type="submit" className="w-full bg-blue-600 text-white p-5 rounded-2xl font-bold shadow-lg uppercase tracking-widest text-xs">Guardar</button>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
