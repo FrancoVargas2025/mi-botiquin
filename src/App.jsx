@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, Circle, Pill, ChevronLeft, ChevronRight, FileDown, 
   Plus, X, Pencil, Trash2, UserCircle, Bell, BellOff, BellRing, 
-  XCircle, Phone, HeartPulse, ShieldAlert, Activity, Moon, Sun, BookOpen, MessageSquare
+  XCircle, Phone, HeartPulse, ShieldAlert, Activity, Moon, Sun, BookOpen, MessageSquare, Calendar
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
@@ -19,7 +19,7 @@ export default function MedTracker() {
   const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEmergenciasOpen, setIsEmergenciasOpen] = useState(false);
-  const [isNotesOpen, setIsNotesOpen] = useState(false); // Sidebar de notas
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [editingMedId, setEditingMedId] = useState(null);
   const [notifStatus, setNotifStatus] = useState('default');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('dark-mode') === 'true');
@@ -27,29 +27,28 @@ export default function MedTracker() {
   const [patientName, setPatientName] = useState(() => localStorage.getItem('botiquin-paciente') || '');
   const [tempPatientName, setTempPatientName] = useState(patientName);
   
-  // Datos principales
   const [meds, setMeds] = useState(() => {
-    const saved = localStorage.getItem('botiquin-v20-data');
+    const saved = localStorage.getItem('botiquin-v21-data');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Notas diarias (Post-its)
   const [dailyNotes, setDailyNotes] = useState(() => {
-    const saved = localStorage.getItem('botiquin-v20-notes');
+    const saved = localStorage.getItem('botiquin-v21-notes');
     return saved ? JSON.parse(saved) : {};
   });
 
+  // Fecha seleccionada para el Diario
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
+  
   const [newName, setNewName] = useState('');
   const [newDosage, setNewDosage] = useState('');
   const [newTime, setNewTime] = useState('09:00');
 
-  // Preguntas sugeridas que rotan
   const healthQuestions = [
     "¿Cómo te has sentido hoy?",
     "¿Notas cambios en tu metabolismo o apetito?",
     "¿Hubo mareos, fatiga o dolor inusual?",
-    "¿Cómo estuvo tu calidad de sueño anoche?",
+    "¿Cómo estuvo tu energía general?",
     "¿Notaste cambios en tu estado de ánimo?",
     "¿Alguna reacción después de la medicación?"
   ];
@@ -61,8 +60,8 @@ export default function MedTracker() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('botiquin-v20-data', JSON.stringify(meds));
-    localStorage.setItem('botiquin-v20-notes', JSON.stringify(dailyNotes));
+    localStorage.setItem('botiquin-v21-data', JSON.stringify(meds));
+    localStorage.setItem('botiquin-v21-notes', JSON.stringify(dailyNotes));
     localStorage.setItem('botiquin-paciente', patientName);
     localStorage.setItem('dark-mode', darkMode);
   }, [meds, dailyNotes, patientName, darkMode]);
@@ -99,7 +98,7 @@ export default function MedTracker() {
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
     doc.setFont("helvetica", "bold").setFontSize(22);
-    doc.text("REPORTE MÉDICO MENSUAL", pageWidth / 2, 20, { align: "center" });
+    doc.text("REPORTE MÉDICO", pageWidth / 2, 20, { align: "center" });
     doc.setFontSize(14).setTextColor(37, 99, 235).text(`${monthNames[viewMonth].toUpperCase()} ${viewYear}`, pageWidth / 2, 28, { align: "center" });
     doc.setFontSize(10).setTextColor(100).text(`Paciente: ${patientName.toUpperCase()}`, pageWidth / 2, 35, { align: "center" });
 
@@ -118,10 +117,9 @@ export default function MedTracker() {
       y += 10;
     });
 
-    // Nueva Sección: Anotaciones Diarias en el PDF
     doc.addPage();
     doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(30, 41, 59);
-    doc.text("ANOTACIONES Y SÍNTOMAS DEL MES", 15, 20);
+    doc.text("ANOTACIONES DEL MES", 15, 20);
     doc.line(15, 23, pageWidth - 15, 23);
     
     y = 35;
@@ -155,33 +153,56 @@ export default function MedTracker() {
         <div className="p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-black dark:text-white flex items-center gap-2">
-              <BookOpen className="text-blue-600" /> Diario de Salud
+              <BookOpen className="text-blue-600" /> Diario
             </h2>
             <button onClick={() => setIsNotesOpen(false)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full dark:text-white"><X size={20}/></button>
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl mb-6">
-            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-1">
-              <MessageSquare size={12}/> Guía de hoy
-            </p>
-            <p className="text-xs italic text-slate-600 dark:text-slate-300">
-              {healthQuestions[new Date().getDate() % healthQuestions.length]}
-            </p>
+          {/* SELECTOR DE FECHA DENTRO DEL DIARIO */}
+          <div className="space-y-4 mb-6">
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Seleccionar Fecha:</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none" />
+                  <input 
+                    type="date" 
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-900 dark:text-white rounded-xl text-sm font-bold outline-none border border-transparent focus:border-blue-500"
+                  />
+                </div>
+                <button 
+                  onClick={() => setSelectedDate(formatDate(new Date()))}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-tighter"
+                >
+                  Hoy
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl">
+              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                <MessageSquare size={12}/> Sugerencia
+              </p>
+              <p className="text-xs italic text-slate-600 dark:text-slate-300">
+                {healthQuestions[new Date(selectedDate + "T00:00:00").getDate() % healthQuestions.length]}
+              </p>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            <div className="bg-yellow-50 dark:bg-slate-800 p-5 rounded-2xl border-l-4 border-yellow-400 shadow-sm">
-              <span className="text-[10px] font-bold text-slate-400 block mb-2 uppercase">
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+            <div className="bg-yellow-50 dark:bg-slate-800 p-5 rounded-2xl border-l-4 border-yellow-400 shadow-sm min-h-[300px]">
+              <span className="text-[10px] font-bold text-slate-400 block mb-2 uppercase tracking-tight">
                 {new Date(selectedDate + "T00:00:00").toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
               </span>
               <textarea
                 value={dailyNotes[selectedDate] || ''}
                 onChange={(e) => setDailyNotes({...dailyNotes, [selectedDate]: e.target.value})}
-                placeholder="Escribe cómo te sientes hoy..."
-                className="w-full h-64 bg-transparent outline-none text-sm font-medium text-slate-700 dark:text-slate-200 resize-none leading-relaxed"
+                placeholder="Escribe aquí tus síntomas o sensaciones..."
+                className="w-full h-full bg-transparent outline-none text-sm font-medium text-slate-700 dark:text-slate-200 resize-none leading-relaxed"
               />
             </div>
-            <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest">Las notas se incluyen en el PDF</p>
           </div>
         </div>
       </aside>
@@ -192,18 +213,17 @@ export default function MedTracker() {
         {!patientName && (
           <div className="fixed inset-0 bg-white dark:bg-slate-950 z-[200] p-10 flex flex-col items-center justify-center">
             <Activity size={60} className="text-blue-600 mb-6" />
-            <h2 className="text-3xl font-black mb-6 dark:text-white">Hola, dinos tu nombre</h2>
+            <h2 className="text-3xl font-black mb-6 dark:text-white">Bienvenido</h2>
             <input type="text" value={tempPatientName} onChange={(e) => setTempPatientName(e.target.value)} className="w-full p-5 rounded-2xl bg-slate-100 dark:bg-slate-800 dark:text-white mb-4 font-bold outline-none" placeholder="Nombre completo" />
-            <button onClick={() => setPatientName(tempPatientName)} className="w-full bg-blue-600 text-white p-5 rounded-2xl font-bold uppercase tracking-widest">Empezar</button>
+            <button onClick={() => setPatientName(tempPatientName)} className="w-full bg-blue-600 text-white p-5 rounded-2xl font-bold uppercase tracking-widest text-xs">Comenzar</button>
           </div>
         )}
 
         <header className="flex justify-between items-center mb-6 bg-white dark:bg-slate-900 p-5 rounded-[2rem] shadow-sm transition-colors">
           <div className="flex items-center gap-4">
-            {/* BOTÓN PARA ABRIR NOTAS */}
             <button onClick={() => setIsNotesOpen(true)} className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-2xl text-blue-600 relative">
               <BookOpen size={24}/>
-              {(dailyNotes[selectedDate]) && <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full ring-2 ring-white dark:ring-slate-900"></span>}
+              {dailyNotes[selectedDate] && <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full ring-2 ring-white dark:ring-slate-900"></span>}
             </button>
             <div>
               <h1 className="text-xl font-black dark:text-white">Mi Botiquín</h1>
@@ -218,11 +238,11 @@ export default function MedTracker() {
           </div>
         </header>
 
-        {/* NAVEGACIÓN Y CALENDARIO */}
+        {/* NAVEGACIÓN SEMANAL */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4 bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-50 dark:border-slate-800 transition-colors">
+          <div className="flex items-center justify-between mb-4 bg-white dark:bg-slate-900 p-3 rounded-2xl shadow-sm border border-slate-50 dark:border-slate-800 transition-colors">
             <button onClick={() => setCurrentWeekStart(new Date(currentWeekStart.setDate(currentWeekStart.getDate() - 7)))} className="dark:text-white"><ChevronLeft/></button>
-            <span className="font-bold text-xs uppercase text-slate-400 dark:text-slate-500">
+            <span className="font-bold text-xs uppercase text-slate-400 dark:text-slate-500 tracking-tighter">
               {currentWeekStart.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
             </span>
             <button onClick={() => setCurrentWeekStart(new Date(currentWeekStart.setDate(currentWeekStart.getDate() + 7)))} className="dark:text-white"><ChevronRight/></button>
@@ -255,7 +275,7 @@ export default function MedTracker() {
                         key={dStr} 
                         onClick={() => {
                           handleToggle(med.id, dStr);
-                          setSelectedDate(dStr); // Al tocar un día, se selecciona para las notas
+                          setSelectedDate(dStr);
                         }} 
                         className={`aspect-square rounded-xl flex flex-col items-center justify-center border-2 transition-all 
                           ${status === true ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 
@@ -302,10 +322,10 @@ export default function MedTracker() {
           </button>
         </div>
 
-        {/* MODAL AGREGAR/EDITAR */}
+        {/* MODAL */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[130] p-0 sm:p-4">
-            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-10 shadow-2xl relative">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-10 shadow-2xl relative">
               <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 text-slate-300 dark:text-slate-600"><X /></button>
               <h2 className="text-2xl font-black mb-6 dark:text-white">{editingMedId ? 'Editar' : 'Nuevo'}</h2>
               <form onSubmit={saveMedication} className="space-y-4">
@@ -314,7 +334,7 @@ export default function MedTracker() {
                   <input type="text" placeholder="Dosis" value={newDosage} onChange={e => setNewDosage(e.target.value)} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold outline-none" />
                   <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl font-bold outline-none" />
                 </div>
-                <button type="submit" className="w-full bg-blue-600 text-white p-5 rounded-2xl font-bold shadow-lg uppercase tracking-widest text-xs">Guardar Cambios</button>
+                <button type="submit" className="w-full bg-blue-600 text-white p-5 rounded-2xl font-bold shadow-lg uppercase tracking-widest text-xs">Guardar</button>
               </form>
             </div>
           </div>
