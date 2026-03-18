@@ -1,7 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Circle, Pill, ChevronLeft, ChevronRight, FileDown, Plus, X, Pencil, Trash2, UserCircle, Bell, BellOff, BellRing, XCircle, Phone, HeartPulse, ShieldAlert, Activity, LifeBuoy } from 'lucide-react';
 import jsPDF from 'jspdf';
+const handleNotifClick = async () => {
+    // 1. Verificamos si el navegador sabe qué es una Notificación
+    if (!('Notification' in window)) {
+      alert("Tu navegador bloquea las notificaciones. Prueba instalando la app en el inicio (PWA) o usando Chrome/Safari real.");
+      return;
+    }
 
+    // 2. Pedimos permiso
+    const permission = await Notification.requestPermission();
+    setNotifStatus(permission);
+    
+    if (permission === 'granted') {
+      // 3. Verificamos el Service Worker
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        registration.showNotification("🔔 ¡Activado!", { body: "Ya puedes recibir alertas." });
+      }
+    }
+  };
 const getStartOfWeek = (date) => {
   const d = new Date(date);
   const day = d.getDay();
