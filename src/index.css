@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@media print {
+  /* Escondemos lo que no queremos en el PDF */
+  button, 
+  .no-print,
+  header {
+    display: none !important;
+  }
+
+  /* Ajustamos el fondo y el contenedor */
+  body {
+    background-color: white !important;
+    padding: 0 !important;
+  }
+
+  #capture-area {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Forzamos a que salgan los colores (importante en Chrome) */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Evitamos que los medicamentos se corten a la mitad entre páginas */
+  #capture-area > div {
+    page-break-inside: avoid;
+    margin-bottom: 20px;
+  }
+}
