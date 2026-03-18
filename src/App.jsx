@@ -24,7 +24,7 @@ export default function MedTracker() {
   const [tempPatientName, setTempPatientName] = useState(patientName);
 
   const [meds, setMeds] = useState(() => {
-    const saved = localStorage.getItem('botiquin-v16-full');
+    const saved = localStorage.getItem('botiquin-v17-compact');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -33,7 +33,7 @@ export default function MedTracker() {
   const [newTime, setNewTime] = useState('09:00');
 
   useEffect(() => {
-    localStorage.setItem('botiquin-v16-full', JSON.stringify(meds));
+    localStorage.setItem('botiquin-v17-compact', JSON.stringify(meds));
     localStorage.setItem('botiquin-paciente', patientName);
   }, [meds, patientName]);
 
@@ -133,38 +133,38 @@ export default function MedTracker() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-10 font-sans text-slate-900 pb-32">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-10 font-sans text-slate-900 pb-24">
       <div className="max-w-xl mx-auto">
         
         {/* PANTALLA BIENVENIDA */}
         {!patientName && (
           <div className="fixed inset-0 bg-white z-[100] p-10 flex flex-col items-center justify-center text-center">
-            <Activity size={60} className="text-blue-500 mb-6 animate-pulse" />
-            <h2 className="text-3xl font-black mb-2">Bienvenido</h2>
-            <p className="text-slate-400 mb-8 text-sm">Tu registro de salud personal.</p>
-            <input type="text" value={tempPatientName} onChange={(e) => setTempPatientName(e.target.value)} placeholder="Nombre del Paciente" className="w-full p-5 rounded-2xl bg-slate-100 mb-4 font-bold outline-none border-2 border-transparent focus:border-blue-500 transition-all" />
-            <button onClick={() => setPatientName(tempPatientName)} className="w-full bg-blue-600 text-white p-5 rounded-2xl font-bold shadow-xl">Comenzar</button>
+            <UserCircle size={60} className="text-blue-500 mb-6" />
+            <h2 className="text-2xl font-black mb-4">¡Hola!</h2>
+            <p className="text-slate-400 mb-6 text-sm">Registro de Salud Personal</p>
+            <input type="text" value={tempPatientName} onChange={(e) => setTempPatientName(e.target.value)} placeholder="Tu nombre" className="w-full p-4 rounded-xl bg-slate-100 mb-4 font-bold outline-none border-2 border-transparent focus:border-blue-500" />
+            <button onClick={() => setPatientName(tempPatientName)} className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg">Empezar</button>
           </div>
         )}
 
-        <header className="flex justify-between items-center mb-6 bg-white p-5 rounded-[2rem] shadow-sm">
+        <header className="flex justify-between items-center mb-6 bg-white p-4 rounded-[1.5rem] shadow-sm">
           <div>
             <h1 className="text-xl font-black leading-none">Mi Botiquín</h1>
             <span className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">{patientName}</span>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleNotifClick} className={`p-2 rounded-xl transition-all ${notifStatus === 'granted' ? 'text-blue-500 bg-blue-50' : 'text-slate-300'}`}>
-              {notifStatus === 'granted' ? <BellRing size={22}/> : <BellOff size={22}/>}
+            <button onClick={handleNotifClick} className={`p-2 rounded-lg ${notifStatus === 'granted' ? 'text-blue-500 bg-blue-50' : 'text-slate-300'}`}>
+              {notifStatus === 'granted' ? <BellRing size={20}/> : <BellOff size={20}/>}
             </button>
-            <button onClick={exportPDF} className="bg-slate-900 text-white p-3 rounded-xl shadow-lg"><FileDown size={20}/></button>
+            <button onClick={exportPDF} className="bg-slate-900 text-white p-2 rounded-lg"><FileDown size={18}/></button>
           </div>
         </header>
 
         {/* TRACKER SEMANAL */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-50">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4 bg-white p-3 rounded-2xl shadow-sm">
             <button onClick={() => setCurrentWeekStart(new Date(currentWeekStart.setDate(currentWeekStart.getDate() - 7)))}><ChevronLeft/></button>
-            <span className="font-bold text-xs uppercase tracking-tighter text-slate-400">
+            <span className="font-bold text-xs uppercase text-slate-400">
               {currentWeekStart.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
             </span>
             <button onClick={() => setCurrentWeekStart(new Date(currentWeekStart.setDate(currentWeekStart.getDate() + 7)))}><ChevronRight/></button>
@@ -172,8 +172,8 @@ export default function MedTracker() {
 
           <div className="space-y-4">
             {meds.map(med => (
-              <div key={med.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
-                <div className="flex justify-between items-center mb-4">
+              <div key={med.id} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-50">
+                <div className="flex justify-between items-center mb-4 gap-4">
                   <div className="flex items-center gap-3">
                     <div className="bg-blue-600 p-3 rounded-xl text-white shadow-lg"><Pill size={18}/></div>
                     <div>
@@ -204,65 +204,60 @@ export default function MedTracker() {
           </div>
         </div>
 
-        {/* SECCIÓN DE EMERGENCIAS ARGENTINA */}
-        <div className="bg-red-50 rounded-[2.5rem] p-8 border border-red-100 mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <ShieldAlert className="text-red-600" size={28} />
-            <h2 className="text-xl font-black text-red-900 tracking-tight">Emergencias (Arg)</h2>
+        {/* SECCIÓN DE EMERGENCIAS COMPACTA AR/OSEP */}
+        <div className="bg-red-50 rounded-3xl p-5 border border-red-100 mb-6">
+          <div className="flex items-center gap-2.5 mb-4 border-b border-red-100 pb-3">
+            <ShieldAlert className="text-red-600" size={20} />
+            <h2 className="text-base font-black text-red-900 tracking-tight">Emergencias Argentinas (Urgencias)</h2>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <a href="tel:107" className="bg-white p-4 rounded-2xl shadow-sm flex flex-col items-center justify-center text-center hover:bg-red-100 transition-colors">
-              <HeartPulse className="text-red-600 mb-2" />
-              <span className="text-2xl font-black text-red-600">107</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Ambulancia</span>
-            </a>
-            <a href="tel:911" className="bg-white p-4 rounded-2xl shadow-sm flex flex-col items-center justify-center text-center hover:bg-red-100 transition-colors">
-              <ShieldAlert className="text-blue-600 mb-2" />
-              <span className="text-2xl font-black text-blue-600">911</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Policía</span>
-            </a>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            <div className="bg-white/50 p-4 rounded-2xl border border-red-100">
-              <p className="text-xs font-black text-red-800 uppercase mb-2 flex items-center gap-2">
-                <Activity size={14}/> Mutuales y Obras Sociales
-              </p>
-              <div className="space-y-2">
-                <a href="tel:08108101033" className="flex justify-between items-center text-sm">
-                  <span className="font-bold text-slate-700">OSEP Mendoza</span>
-                  <span className="bg-red-600 text-white px-3 py-1 rounded-lg font-black text-xs">0810-810-1033</span>
+          <div className="space-y-2.5">
+            {[
+              { icon: HeartPulse, iconColor: 'text-red-600', name: 'Ambulancia (Nacional)', num: '107' },
+              { icon: ShieldAlert, iconColor: 'text-blue-600', name: 'Policía (Urgencias 911)', num: '911' },
+              { icon: Activity, iconColor: 'text-red-600', name: 'OSEP Mendoza (Central)', num: '0810-810-1033' },
+              { icon: Phone, iconColor: 'text-slate-600', name: 'PAMI Escucha (Consultas)', num: '138' },
+              { icon: Phone, iconColor: 'text-slate-600', name: 'Salud Mental (Asistencia)', num: '0800-999-0091' },
+            ].map((item, index) => {
+              const IconComponent = item.icon;
+              return (
+                <a
+                  key={index}
+                  href={`tel:${item.num.replace(/-/g, '')}`}
+                  className="flex items-center justify-between bg-white/70 p-3 rounded-xl border border-red-50 hover:bg-white transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <IconComponent className={item.iconColor} size={18} />
+                    <div>
+                      <p className="font-bold text-slate-900 text-xs leading-tight">{item.name}</p>
+                      <p className="text-[10px] font-black text-slate-500 tracking-tighter">{item.num}</p>
+                    </div>
+                  </div>
+                  <div className="bg-red-600 text-white p-2.5 rounded-full shadow-md">
+                    <Phone size={12} />
+                  </div>
                 </a>
-                <a href="tel:138" className="flex justify-between items-center text-sm border-t border-red-50 pt-2">
-                  <span className="font-bold text-slate-700">PAMI (Escucha)</span>
-                  <span className="bg-slate-800 text-white px-3 py-1 rounded-lg font-black text-xs">138</span>
-                </a>
-                <a href="tel:08009990091" className="flex justify-between items-center text-sm border-t border-red-50 pt-2">
-                  <span className="font-bold text-slate-700">Salud Mental</span>
-                  <span className="bg-slate-800 text-white px-3 py-1 rounded-lg font-black text-xs">0800-999-0091</span>
-                </a>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
 
-        <button onClick={() => {setEditingMedId(null); setNewName(''); setIsModalOpen(true);}} className="fixed bottom-8 right-8 bg-blue-600 text-white p-5 rounded-full shadow-2xl z-50 hover:scale-110 active:scale-90 transition-all">
-          <Plus size={28}/>
+        <button onClick={() => {setEditingMedId(null); setNewName(''); setIsModalOpen(true);}} className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg z-50 hover:scale-110 active:scale-90 transition-all">
+          <Plus size={24}/>
         </button>
 
-        {/* MODAL */}
+        {/* MODAL FORMULARIO */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[110] p-0 sm:p-4">
-            <div className="bg-white w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-10 shadow-2xl">
-              <h2 className="text-2xl font-black mb-6 text-slate-800">{editingMedId ? 'Editar' : 'Nuevo'}</h2>
+            <div className="bg-white w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-8 shadow-2xl">
+              <h2 className="text-xl font-bold mb-4">{editingMedId ? 'Editar' : 'Nuevo'}</h2>
               <form onSubmit={saveMedication} className="space-y-4">
-                <input autoFocus type="text" placeholder="Nombre" value={newName} onChange={e => setNewName(e.target.value)} className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none" />
+                <input autoFocus type="text" placeholder="Nombre" value={newName} onChange={e => setNewName(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl font-bold outline-none focus:ring-2 focus:ring-blue-500" />
                 <div className="grid grid-cols-2 gap-3">
-                  <input type="text" placeholder="Dosis" value={newDosage} onChange={e => setNewDosage(e.target.value)} className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none" />
-                  <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none" />
+                  <input type="text" placeholder="Dosis" value={newDosage} onChange={e => setNewDosage(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl font-bold outline-none" />
+                  <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl font-bold outline-none" />
                 </div>
-                <button type="submit" className="w-full bg-blue-600 text-white p-5 rounded-2xl font-bold shadow-lg mt-2 uppercase text-sm tracking-widest">Guardar</button>
+                <button type="submit" className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg">Guardar</button>
                 <button type="button" onClick={() => setIsModalOpen(false)} className="w-full text-slate-400 font-bold p-2 text-xs uppercase">Cancelar</button>
               </form>
             </div>
