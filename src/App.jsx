@@ -16,7 +16,6 @@ export default function MedTracker() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMedId, setEditingMedId] = useState(null);
   
-  // Seguridad para notificaciones en móvil
   const [notifStatus, setNotifStatus] = useState(
     typeof Notification !== 'undefined' ? Notification.permission : 'denied'
   );
@@ -25,7 +24,7 @@ export default function MedTracker() {
   const [tempPatientName, setTempPatientName] = useState(patientName);
 
   const [meds, setMeds] = useState(() => {
-    const saved = localStorage.getItem('botiquin-v14-final');
+    const saved = localStorage.getItem('botiquin-v15-final');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -34,11 +33,10 @@ export default function MedTracker() {
   const [newTime, setNewTime] = useState('09:00');
 
   useEffect(() => {
-    localStorage.setItem('botiquin-v14-final', JSON.stringify(meds));
+    localStorage.setItem('botiquin-v15-final', JSON.stringify(meds));
     localStorage.setItem('botiquin-paciente', patientName);
   }, [meds, patientName]);
 
-  // --- FUNCIÓN PARA GUARDAR (LA QUE FALTABA) ---
   const saveMedication = (e) => {
     if (e) e.preventDefault();
     if (!newName) return;
@@ -46,30 +44,11 @@ export default function MedTracker() {
     if (editingMedId) {
       setMeds(meds.map(m => m.id === editingMedId ? { ...m, name: newName, dosage: newDosage, time: newTime } : m));
     } else {
-      const newMed = {
-        id: Date.now(),
-        name: newName,
-        dosage: newDosage,
-        time: newTime,
-        history: {}
-      };
-      setMeds([...meds, newMed]);
+      setMeds([...meds, { id: Date.now(), name: newName, dosage: newDosage, time: newTime, history: {} }]);
     }
     
-    // Limpiar y cerrar
-    setNewName('');
-    setNewDosage('');
-    setNewTime('09:00');
-    setEditingMedId(null);
-    setIsModalOpen(false);
-  };
-
-  const handleNotifClick = () => {
-    if (typeof Notification === 'undefined') {
-      alert("Tu navegador no soporta notificaciones.");
-      return;
-    }
-    Notification.requestPermission().then(setNotifStatus);
+    setNewName(''); setNewDosage(''); setNewTime('09:00');
+    setEditingMedId(null); setIsModalOpen(false);
   };
 
   const handleToggle = (medId, dateStr) => {
@@ -83,31 +62,53 @@ export default function MedTracker() {
     }));
   };
 
+  // --- PDF MEJORADO CON MES Y AÑO ---
   const exportPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    
     const viewDate = new Date(currentWeekStart);
     const viewMonth = viewDate.getMonth();
-    const daysInMonth = new Date(viewDate.getFullYear(), viewMonth + 1, 0).getDate();
+    const viewYear = viewDate.getFullYear();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
-    doc.setFont("helvetica", "bold").setFontSize(20);
-    doc.text(`REPORTE: ${patientName.toUpperCase()}`, pageWidth / 2, 20, { align: "center" });
+    // Título y Paciente
+    doc.setFont("helvetica", "bold").setFontSize(22);
+    doc.text("REPORTE DE MEDICACIÓN", pageWidth / 2, 20, { align: "center" });
     
-    let y = 40;
+    // Mes y Año destacados
+    doc.setFontSize(14).setTextColor(37, 99, 235); // Color azul
+    doc.text(`${monthNames[viewMonth].toUpperCase()} ${viewYear}`, pageWidth / 2, 28, { align: "center" });
+
+    doc.setFontSize(10).setTextColor(100).setFont("helvetica", "normal");
+    doc.text(`Paciente: ${patientName.toUpperCase()}`, pageWidth / 2, 35, { align: "center" });
+    
+    doc.line(15, 38, pageWidth - 15, 38);
+
+    let y = 50;
     meds.forEach((med, idx) => {
+      if (y > 220) { doc.addPage(); y = 25; }
       doc.setFillColor(30, 41, 59).rect(15, y - 5, pageWidth - 30, 10, 'F');
-      doc.setTextColor(255).text(`${idx + 1}. ${med.name} (${med.dosage})`, 20, y + 1.5);
-      y += 15; doc.setTextColor(0).setFontSize(8);
+      doc.setTextColor(255).setFont("helvetica", "bold").setFontSize(11);
+      doc.text(`${idx + 1}. ${med.name} (${med.dosage}) - ${med.time} HS`, 20, y + 1.5);
       
+      y += 12; doc.setTextColor(0).setFontSize(8).setFont("helvetica", "normal");
+      
+      // Lista de días en columnas para ahorrar espacio
       for (let d = 1; d <= daysInMonth; d++) {
-        const dStr = formatDate(new Date(viewDate.getFullYear(), viewMonth, d));
+        const dObj = new Date(viewYear, viewMonth, d);
+        const dStr = formatDate(dObj);
         const status = med.history[dStr];
-        doc.text(`Día ${d}: ${status === true ? 'TOMADA' : status === false ? 'FALLO' : '---'}`, 20, y);
+        const dayName = dObj.toLocaleDateString('es-ES', { weekday: 'short' });
+
+        doc.text(`${dayName} ${d}: ${status === true ? 'TOMADA' : status === false ? 'FALLO' : '---'}`, 20, y);
         y += 5; if (y > 280) { doc.addPage(); y = 20; }
       }
       y += 10;
     });
-    doc.save(`Reporte_${patientName}.pdf`);
+
+    doc.save(`Reporte_${monthNames[viewMonth]}_${patientName}.pdf`);
   };
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => {
@@ -125,9 +126,8 @@ export default function MedTracker() {
           <div className="fixed inset-0 bg-white z-[100] p-10 flex flex-col items-center justify-center text-center">
             <UserCircle size={60} className="text-blue-500 mb-6" />
             <h2 className="text-2xl font-black mb-4">¡Hola!</h2>
-            <p className="text-slate-400 mb-6">Dinos tu nombre para personalizar tus reportes.</p>
-            <input type="text" value={tempPatientName} onChange={(e) => setTempPatientName(e.target.value)} placeholder="Tu nombre" className="w-full p-4 rounded-2xl bg-slate-100 mb-4 font-bold outline-none" />
-            <button onClick={() => setPatientName(tempPatientName)} className="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold shadow-lg">Empezar</button>
+            <input type="text" value={tempPatientName} onChange={(e) => setTempPatientName(e.target.value)} placeholder="Tu nombre" className="w-full p-4 rounded-xl bg-slate-100 mb-4 font-bold outline-none" />
+            <button onClick={() => setPatientName(tempPatientName)} className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg">Empezar</button>
           </div>
         )}
 
@@ -136,31 +136,28 @@ export default function MedTracker() {
             <h1 className="text-xl font-black leading-none">Mi Botiquín</h1>
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{patientName}</span>
           </div>
-          <div className="flex gap-2">
-            <button onClick={handleNotifClick} className="p-2">
-              {notifStatus === 'granted' ? <BellRing size={22} className="text-blue-500"/> : <BellOff size={22} className="text-slate-300"/>}
-            </button>
-            <button onClick={exportPDF} className="bg-slate-900 text-white p-3 rounded-xl shadow-lg"><FileDown size={20}/></button>
-          </div>
+          <button onClick={exportPDF} className="bg-slate-900 text-white p-3 rounded-xl shadow-lg flex items-center gap-2">
+            <FileDown size={20}/>
+            <span className="text-xs font-bold hidden sm:block">PDF</span>
+          </button>
         </header>
 
         {/* NAVEGADOR FECHAS */}
-        <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-50">
+        <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm">
           <button onClick={() => setCurrentWeekStart(new Date(currentWeekStart.setDate(currentWeekStart.getDate() - 7)))} className="p-2"><ChevronLeft/></button>
-          <span className="font-bold text-sm capitalize text-blue-600">{currentWeekStart.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
+          <span className="font-bold text-sm capitalize text-blue-600">
+            {currentWeekStart.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+          </span>
           <button onClick={() => setCurrentWeekStart(new Date(currentWeekStart.setDate(currentWeekStart.getDate() + 7)))} className="p-2"><ChevronRight/></button>
         </div>
 
-        {/* LISTA DE MEDICAMENTOS */}
+        {/* LISTA */}
         <div className="space-y-4">
-          {meds.length === 0 && (
-            <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-[2.5rem] text-slate-300 font-bold">Pulsa el botón + para añadir</div>
-          )}
           {meds.map(med => (
             <div key={med.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-50">
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="bg-blue-600 p-3 rounded-xl text-white shadow-blue-100 shadow-lg"><Pill size={18}/></div>
+                  <div className="bg-blue-600 p-3 rounded-xl text-white shadow-lg"><Pill size={18}/></div>
                   <div>
                     <h2 className="font-bold text-slate-800 leading-none">{med.name}</h2>
                     <span className="text-[10px] text-slate-300 font-bold uppercase">{med.dosage} • {med.time} HS</span>
@@ -188,24 +185,22 @@ export default function MedTracker() {
           ))}
         </div>
 
-        {/* BOTÓN AÑADIR */}
-        <button onClick={() => {setEditingMedId(null); setNewName(''); setNewDosage(''); setIsModalOpen(true);}} className="fixed bottom-8 right-8 bg-blue-600 text-white p-5 rounded-full shadow-2xl z-50 hover:scale-110 active:scale-90 transition-all">
+        <button onClick={() => {setEditingMedId(null); setNewName(''); setIsModalOpen(true);}} className="fixed bottom-8 right-8 bg-blue-600 text-white p-5 rounded-full shadow-2xl z-50">
           <Plus size={28}/>
         </button>
 
-        {/* MODAL FORMULARIO */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[110] p-0 sm:p-4">
             <div className="bg-white w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-10 shadow-2xl">
-              <h2 className="text-2xl font-black mb-6 text-slate-800">{editingMedId ? 'Editar Medicina' : 'Nueva Medicina'}</h2>
+              <h2 className="text-2xl font-black mb-6 text-slate-800">{editingMedId ? 'Editar' : 'Nuevo'}</h2>
               <form onSubmit={saveMedication} className="space-y-4">
                 <input autoFocus type="text" placeholder="Nombre" value={newName} onChange={e => setNewName(e.target.value)} className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500" />
                 <div className="grid grid-cols-2 gap-3">
                   <input type="text" placeholder="Dosis" value={newDosage} onChange={e => setNewDosage(e.target.value)} className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none" />
                   <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none" />
                 </div>
-                <button type="submit" className="w-full bg-blue-600 text-white p-5 rounded-2xl font-bold shadow-lg shadow-blue-100 mt-2 uppercase tracking-widest text-sm">Guardar</button>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="w-full text-slate-400 font-bold p-2 text-xs uppercase tracking-widest">Cancelar</button>
+                <button type="submit" className="w-full bg-blue-600 text-white p-5 rounded-2xl font-bold shadow-lg mt-2 uppercase text-sm tracking-widest">Guardar</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="w-full text-slate-400 font-bold p-2 text-xs uppercase">Cancelar</button>
               </form>
             </div>
           </div>
